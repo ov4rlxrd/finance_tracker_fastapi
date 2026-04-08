@@ -40,6 +40,7 @@
 - Password reset flow (forgot/reset password)
 - Email-шаблоны для восстановления доступа
 - Миграции БД через Alembic
+- Интеграции с ИИ и анализ ваших расходов
 
 ---
 
