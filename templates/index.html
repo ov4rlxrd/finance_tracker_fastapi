@@ -1,0 +1,1341 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flux — Finance Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --surface2: #18181f;
+      --surface3: #1e1e28;
+      --border: rgba(255,255,255,0.07);
+      --border-hi: rgba(255,255,255,0.13);
+      --border-active: rgba(74,240,196,0.35);
+      --text: #e8e8f0;
+      --muted: #6b6b80;
+      --muted2: #4a4a5a;
+      --accent: #4af0c4;
+      --accent-dim: rgba(74,240,196,0.12);
+      --accent2: #6a8fff;
+      --accent2-dim: rgba(106,143,255,0.12);
+      --danger: #ff5f6d;
+      --danger-dim: rgba(255,95,109,0.12);
+      --warning: #ffb547;
+      --warning-dim: rgba(255,181,71,0.12);
+      --income: #4af0c4;
+      --expense: #ff5f6d;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── Layout ── */
+    .shell {
+      display: flex; min-height: 100vh;
+      position: relative; z-index: 1;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 220px; flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 28px 16px;
+      position: sticky; top: 0; height: 100vh;
+      overflow-y: auto;
+    }
+
+    .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 36px; padding: 0 8px; }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 9px; display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .logo-name {
+      font-size: 18px; font-weight: 800; letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 0%, var(--muted) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    .nav-section { margin-bottom: 24px; }
+    .nav-label {
+      font-size: 9px; font-weight: 700; letter-spacing: 1.4px;
+      text-transform: uppercase; color: var(--muted2);
+      padding: 0 10px; margin-bottom: 6px;
+    }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: 10px;
+      cursor: pointer; color: var(--muted);
+      font-size: 13px; font-weight: 600;
+      transition: all 0.18s; border: 1px solid transparent;
+      user-select: none;
+    }
+    .nav-item:hover { color: var(--text); background: var(--surface2); }
+    .nav-item.active {
+      color: var(--text);
+      background: var(--surface2);
+      border-color: var(--border);
+    }
+    .nav-item.active .nav-icon { color: var(--accent); }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+
+    .sidebar-bottom {
+      margin-top: auto; padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .user-chip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px; border-radius: 10px;
+      background: var(--surface2); border: 1px solid var(--border);
+    }
+    .user-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #051a14; flex-shrink: 0;
+    }
+    .user-info { flex: 1; overflow: hidden; }
+    .user-name { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-role { font-size: 10px; color: var(--muted); }
+    .logout-btn {
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; font-size: 15px; padding: 2px;
+      transition: color 0.2s; flex-shrink: 0;
+    }
+    .logout-btn:hover { color: var(--danger); }
+
+    /* ── Main ── */
+    .main {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      padding: 36px 36px 60px;
+      max-width: 860px;
+    }
+
+    .page { display: none; animation: fadeUp 0.3s ease both; }
+    .page.active { display: block; }
+
+    .page-header { margin-bottom: 28px; }
+    .page-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+    .page-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 22px;
+      transition: border-color 0.2s;
+    }
+    .card + .card { margin-top: 14px; }
+    .card:hover { border-color: var(--border-hi); }
+
+    .section-title {
+      font-size: 10px; font-weight: 700; letter-spacing: 1.4px;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 18px;
+    }
+
+    /* ── Fields ── */
+    .field { margin-bottom: 12px; }
+    .field:last-of-type { margin-bottom: 0; }
+    .field label {
+      display: block; font-size: 10px; font-weight: 700;
+      letter-spacing: 0.7px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 7px;
+    }
+    .field input, .field select {
+      width: 100%;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 11px 14px;
+      color: var(--text); font-family: 'Syne', sans-serif; font-size: 14px;
+      transition: all 0.2s; outline: none; appearance: none;
+    }
+    .field input::placeholder { color: var(--muted); }
+    .field input:focus, .field select:focus {
+      border-color: var(--border-active);
+      box-shadow: 0 0 0 3px rgba(74,240,196,0.06);
+    }
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b80' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 14px center; cursor: pointer;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 11px 20px; border: none; border-radius: 11px;
+      font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700;
+      letter-spacing: 0.4px; cursor: pointer; transition: all 0.2s;
+      text-transform: uppercase; width: 100%;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #2ec9a0); color: #051a14; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(74,240,196,0.3); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--border-active); color: var(--accent); }
+    .btn-danger { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(255,95,109,0.2); }
+    .btn-danger:hover { background: rgba(255,95,109,0.2); border-color: rgba(255,95,109,0.4); }
+    .btn-warning { background: var(--warning-dim); color: var(--warning); border: 1px solid rgba(255,181,71,0.2); }
+    .btn-warning:hover { background: rgba(255,181,71,0.2); border-color: rgba(255,181,71,0.4); }
+    .btn-purple { background: var(--accent2-dim); color: var(--accent2); border: 1px solid rgba(106,143,255,0.2); }
+    .btn-purple:hover { background: rgba(106,143,255,0.2); border-color: rgba(106,143,255,0.4); }
+    .btn-sm { padding: 7px 14px; font-size: 11px; width: auto; }
+    .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+    .btn-row .btn { flex: 1; }
+
+    .divider { height: 1px; background: var(--border); margin: 18px 0; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(10px);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 20px;
+      font-size: 13px; font-weight: 600;
+      opacity: 0; pointer-events: none;
+      transition: all 0.3s; z-index: 999;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.ok { border-color: rgba(74,240,196,0.4); color: var(--accent); }
+    #toast.err { border-color: rgba(255,95,109,0.4); color: var(--danger); }
+
+    /* ── Auth page ── */
+    .auth-wrap {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .auth-box {
+      width: 100%; max-width: 420px;
+    }
+    .auth-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 36px; justify-content: center; }
+    .auth-logo-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 14px; display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .auth-logo-name { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
+
+    .auth-tabs {
+      display: flex; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 4px; margin-bottom: 24px;
+    }
+    .auth-tab {
+      flex: 1; padding: 9px; border: none; background: transparent;
+      color: var(--muted); font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+      border-radius: 9px; cursor: pointer; transition: all 0.2s;
+    }
+    .auth-tab.active { background: var(--surface2); color: var(--text); }
+    .auth-form { display: none; }
+    .auth-form.active { display: block; }
+
+    /* ── Profile display ── */
+    .profile-hero {
+      display: flex; align-items: center; gap: 18px;
+      padding: 24px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 16px;
+      margin-bottom: 14px;
+    }
+    .profile-avatar {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; color: #051a14;
+      flex-shrink: 0;
+    }
+    .profile-meta { flex: 1; }
+    .profile-name { font-size: 20px; font-weight: 800; letter-spacing: -0.3px; }
+    .profile-email { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .profile-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 100px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+      background: var(--accent-dim); color: var(--accent);
+      border: 1px solid rgba(74,240,196,0.2); margin-top: 8px;
+    }
+
+    /* ── Wallet display ── */
+    .wallet-hero {
+      background: linear-gradient(135deg, #141420, #0e1a2a);
+      border: 1px solid rgba(74,240,196,0.15);
+      border-radius: 20px; padding: 28px;
+      position: relative; overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .wallet-hero::before {
+      content: '';
+      position: absolute; top: -40px; right: -40px;
+      width: 160px; height: 160px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(74,240,196,0.08) 0%, transparent 70%);
+    }
+    .wallet-hero-label { font-size: 10px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .wallet-hero-name { font-size: 22px; font-weight: 800; }
+    .wallet-hero-balance {
+      font-size: 42px; font-weight: 800; letter-spacing: -2px;
+      color: var(--accent); margin: 12px 0 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .wallet-hero-currency { font-size: 13px; color: var(--muted); }
+
+    /* ── Operations list ── */
+    .ops-list { display: flex; flex-direction: column; gap: 8px; }
+    .op-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px; border-radius: 12px;
+      background: var(--surface2); border: 1px solid var(--border);
+      transition: border-color 0.15s;
+    }
+    .op-item:hover { border-color: var(--border-hi); }
+    .op-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .op-icon.income { background: rgba(74,240,196,0.1); }
+    .op-icon.expense { background: rgba(255,95,109,0.1); }
+    .op-icon.transfer { background: rgba(106,143,255,0.1); }
+    .op-body { flex: 1; min-width: 0; }
+    .op-desc { font-size: 13px; font-weight: 600; }
+    .op-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .op-amount { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 500; flex-shrink: 0; }
+    .op-amount.income { color: var(--income); }
+    .op-amount.expense { color: var(--expense); }
+    .op-amount.transfer { color: var(--accent2); }
+    .ops-empty { text-align: center; padding: 36px; color: var(--muted); font-size: 13px; }
+
+    /* ── Analysis display ── */
+    .analysis-block {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px;
+      font-size: 14px; line-height: 1.75; color: var(--text);
+      white-space: pre-wrap; word-break: break-word;
+    }
+
+    /* ── Stats row ── */
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
+    .stat-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px;
+    }
+    .stat-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .stat-value { font-size: 22px; font-weight: 800; font-family: 'JetBrains Mono', monospace; letter-spacing: -1px; }
+    .stat-value.green { color: var(--accent); }
+    .stat-value.red { color: var(--danger); }
+    .stat-value.blue { color: var(--accent2); }
+
+    /* ── Admin user card ── */
+    .admin-user-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px;
+    }
+    .admin-user-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 9px 0; border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .admin-user-row:last-child { border-bottom: none; }
+    .admin-user-key { color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .admin-user-val { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+    /* ── Error box ── */
+    .error-box {
+      background: var(--danger-dim); border: 1px solid rgba(255,95,109,0.25);
+      border-radius: 12px; padding: 14px 16px;
+      font-size: 13px; color: var(--danger); display: none;
+    }
+    .error-box.show { display: block; }
+
+    /* ── Success box ── */
+    .success-box {
+      background: var(--accent-dim); border: 1px solid rgba(74,240,196,0.25);
+      border-radius: 12px; padding: 14px 16px;
+      font-size: 13px; color: var(--accent); display: none; margin-bottom: 14px;
+    }
+    .success-box.show { display: block; }
+
+    /* ── Transfer result ── */
+    .transfer-result {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px; text-align: center; display: none;
+    }
+    .transfer-result.show { display: block; }
+    .transfer-result-icon { font-size: 32px; margin-bottom: 10px; }
+    .transfer-result-amount { font-size: 28px; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--accent2); }
+    .transfer-result-desc { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+    /* ── Skeleton ── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 50%, var(--surface2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 8px; height: 16px;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── Responsive ── */
+    @media (max-width: 720px) {
+      .sidebar { display: none; }
+      .main { padding: 20px 16px 60px; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .wallet-hero-balance { font-size: 32px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ AUTH SCREEN ══════════ -->
+<div id="authScreen">
+  <div class="auth-wrap">
+    <div class="auth-box">
+      <div class="auth-logo">
+        <div class="auth-logo-icon">₿</div>
+        <span class="auth-logo-name">Flux</span>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="authTab('login',this)">Sign in</button>
+        <button class="auth-tab" onclick="authTab('register',this)">Register</button>
+      </div>
+
+      <!-- Login -->
+      <div class="auth-form active" id="authLogin">
+        <div class="card">
+          <div class="field"><label>Username</label><input id="login_username" placeholder="yourname"/></div>
+          <div class="field"><label>Password</label><input id="login_password" type="password" placeholder="••••••••"/></div>
+          <div id="loginError" class="error-box" style="margin:12px 0 0"></div>
+          <div style="margin-top:14px">
+            <button class="btn btn-primary" onclick="login()">Sign in →</button>
+          </div>
+        <div style="margin-top:12px; display:flex; justify-content:space-between; gap:10px;">
+          <button class="btn btn-secondary btn-sm" type="button" onclick="openAuthForm('forgot')">Forgot password?</button>
+        </div>
+
+        </div>
+      </div>
+
+<!-- Forgot password -->
+<div class="auth-form" id="authForgot">
+  <div class="card">
+    <div class="section-title">Password recovery</div>
+    <div class="field">
+      <label>Email</label>
+      <input id="forgot_email" type="email" placeholder="you@email.com"/>
+    </div>
+    <div id="forgotMsg" class="success-box" style="margin-top:12px; display:none;"></div>
+    <div id="forgotError" class="error-box" style="margin-top:12px;"></div>
+    <div style="margin-top:14px">
+      <button class="btn btn-primary" onclick="forgotPassword()">Send reset email →</button>
+    </div>
+    <div style="margin-top:10px">
+      <button class="btn btn-secondary" type="button" onclick="openAuthForm('login')">Back to sign in</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset password -->
+<div class="auth-form" id="authReset">
+  <div class="card">
+    <div class="section-title">Reset password</div>
+    <div class="field">
+      <label>Reset token</label>
+      <input id="reset_token" placeholder="paste token from email"/>
+    </div>
+    <div class="field">
+      <label>New password</label>
+      <input id="reset_new_password" type="password" placeholder="min 8 chars"/>
+    </div>
+    <div id="resetError" class="error-box" style="margin-top:12px;"></div>
+    <div style="margin-top:14px">
+      <button class="btn btn-primary" onclick="resetPassword()">Set new password →</button>
+    </div>
+    <div style="margin-top:10px">
+      <button class="btn btn-secondary" type="button" onclick="openAuthForm('login')">Back to sign in</button>
+    </div>
+  </div>
+</div>
+
+
+      <!-- Register -->
+      <div class="auth-form" id="authRegister">
+        <div class="card">
+          <div class="grid-2">
+            <div class="field"><label>Username</label><input id="reg_username" placeholder="yourname"/></div>
+            <div class="field"><label>Email</label><input id="reg_email" type="email" placeholder="you@email.com"/></div>
+          </div>
+          <div class="grid-2">
+            <div class="field"><label>Password</label><input id="reg_password" type="password" placeholder="min 8 chars"/></div>
+            <div class="field"><label>First wallet name</label><input id="reg_wallet_name" value="Main"/></div>
+          </div>
+          <div id="regError" class="error-box" style="margin:12px 0 0"></div>
+          <div style="margin-top:14px">
+            <button class="btn btn-primary" onclick="registerUser()">Create account →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ APP SHELL ══════════ -->
+<div id="appShell" style="display:none">
+  <div class="shell">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-icon">₿</div>
+        <span class="logo-name">Flux</span>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Main</div>
+        <div class="nav-item active" onclick="nav('dashboard')">
+          <span class="nav-icon">◈</span> Dashboard
+        </div>
+        <div class="nav-item" onclick="nav('wallets')">
+          <span class="nav-icon">◉</span> Wallets
+        </div>
+        <div class="nav-item" onclick="nav('operations')">
+          <span class="nav-icon">⇅</span> Operations
+        </div>
+        <div class="nav-item" onclick="nav('analysis')">
+          <span class="nav-icon">◎</span> Analysis
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Account</div>
+        <div class="nav-item" onclick="nav('account')">
+          <span class="nav-icon">◷</span> Profile
+        </div>
+        <div class="nav-item" id="adminNavItem" style="display:none" onclick="nav('admin')">
+          <span class="nav-icon">⬡</span> Admin
+        </div>
+      </div>
+
+      <div class="sidebar-bottom">
+        <div class="user-chip">
+          <div class="user-avatar" id="sidebarAvatar">?</div>
+          <div class="user-info">
+            <div class="user-name" id="sidebarName">—</div>
+            <div class="user-role" id="sidebarRole">user</div>
+          </div>
+          <button class="logout-btn" title="Sign out" onclick="logout()">✕</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header">
+          <div class="page-title">Dashboard</div>
+          <div class="page-sub">Welcome back, <span id="dashWelcome">—</span></div>
+        </div>
+
+        <div class="stats-row" id="dashStats">
+          <div class="stat-card"><div class="stat-label">Total balance</div><div class="stat-value green" id="dashBalance">—</div></div>
+          <div class="stat-card"><div class="stat-label">Income (all time)</div><div class="stat-value green" id="dashIncome">—</div></div>
+          <div class="stat-card"><div class="stat-label">Expenses (all time)</div><div class="stat-value red" id="dashExpense">—</div></div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">Recent operations</div>
+          <div id="dashOps" class="ops-list"><div class="ops-empty">Loading...</div></div>
+        </div>
+      </div>
+
+      <!-- ── WALLETS ── -->
+      <div class="page" id="page-wallets">
+        <div class="page-header">
+          <div class="page-title">Wallets</div>
+          <div class="page-sub">Check balances, create and manage your wallets</div>
+        </div>
+
+        <!-- Balance lookup -->
+        <div class="card">
+          <div class="section-title">Check balance</div>
+          <div class="grid-2" style="align-items:flex-end; gap:12px">
+            <div class="field" style="margin:0"><label>Wallet name</label><input id="wallet_name_balance" placeholder="Main"/></div>
+            <button class="btn btn-secondary" onclick="getBalance()" style="height:44px">Get balance</button>
+          </div>
+          <div id="walletBalanceResult" style="margin-top:14px; display:none"></div>
+        </div>
+
+        <!-- Create wallet -->
+        <div class="card">
+          <div class="section-title">Create new wallet</div>
+          <div class="grid-2">
+            <div class="field"><label>Wallet name</label><input id="wallet_name_create" placeholder="Savings"/></div>
+            <div class="field">
+              <label>Currency</label>
+              <select id="wallet_currency">
+                <option value="rub">🇷🇺 RUB</option>
+                <option value="usd">🇺🇸 USD</option>
+                <option value="eur">🇪🇺 EUR</option>
+              </select>
+            </div>
+          </div>
+          <div id="walletCreateResult" style="margin-top:12px; display:none"></div>
+          <div style="margin-top:14px"><button class="btn btn-primary" onclick="createWallet()">Create wallet →</button></div>
+        </div>
+
+        <!-- Update wallet -->
+        <div class="card">
+          <div class="section-title">Rename wallet</div>
+          <div class="grid-2">
+            <div class="field"><label>Wallet ID</label><input id="wallet_update_id" type="number" placeholder="1"/></div>
+            <div class="field"><label>New name</label><input id="wallet_update_name" placeholder="New name"/></div>
+          </div>
+          <div style="margin-top:14px"><button class="btn btn-warning" onclick="updateWallet()">Save changes</button></div>
+        </div>
+
+        <!-- Delete wallet -->
+        <div class="card">
+          <div class="section-title">Delete wallet</div>
+          <div class="field"><label>Wallet ID</label><input id="wallet_delete_id" type="number" placeholder="1"/></div>
+          <div style="margin-top:14px"><button class="btn btn-danger" onclick="deleteWallet()">Delete wallet</button></div>
+        </div>
+      </div>
+
+      <!-- ── OPERATIONS ── -->
+      <div class="page" id="page-operations">
+        <div class="page-header">
+          <div class="page-title">Operations</div>
+          <div class="page-sub">Add income, expenses and transfers</div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:14px">
+          <!-- Income -->
+          <div class="card">
+            <div class="section-title" style="color: var(--accent)">+ Income</div>
+            <div class="field"><label>Wallet name</label><input id="income_wallet_name" placeholder="Main"/></div>
+            <div class="field"><label>Amount</label><input id="income_amount" type="number" step="0.01" placeholder="0.00"/></div>
+            <div class="field"><label>Description</label><input id="income_description" placeholder="Salary, freelance..."/></div>
+            <div style="margin-top:14px"><button class="btn btn-primary" onclick="addIncome()">+ Add income</button></div>
+          </div>
+          <!-- Expense -->
+          <div class="card">
+            <div class="section-title" style="color: var(--danger)">− Expense</div>
+            <div class="field"><label>Wallet name</label><input id="expense_wallet_name" placeholder="Main"/></div>
+            <div class="field"><label>Amount</label><input id="expense_amount" type="number" step="0.01" placeholder="0.00"/></div>
+            <div class="field"><label>Description</label><input id="expense_description" placeholder="Groceries, rent..."/></div>
+            <div style="margin-top:14px"><button class="btn btn-danger" onclick="addExpense()">− Add expense</button></div>
+          </div>
+        </div>
+
+        <!-- Internal transfer -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="section-title" style="color: var(--accent2)">⇄ Internal transfer</div>
+          <div class="grid-3">
+            <div class="field"><label>From wallet ID</label><input id="int_from_wallet" type="number" placeholder="1"/></div>
+            <div class="field"><label>To wallet ID</label><input id="int_to_wallet" type="number" placeholder="2"/></div>
+            <div class="field"><label>Amount</label><input id="int_amount" type="number" step="0.01" placeholder="100.00"/></div>
+          </div>
+          <div id="internalTransferResult" class="transfer-result" style="margin-top:14px"></div>
+          <div style="margin-top:14px"><button class="btn btn-purple" onclick="internalTransfer()">Transfer between wallets</button></div>
+        </div>
+
+        <!-- Transfer to user -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="section-title" style="color: var(--accent2)">↗ Send to user</div>
+          <div class="grid-3">
+            <div class="field"><label>To user ID</label><input id="transfer_user_id" type="number" placeholder="5"/></div>
+            <div class="field"><label>From wallet ID</label><input id="transfer_wallet_id" type="number" placeholder="1"/></div>
+            <div class="field"><label>Amount</label><input id="transfer_amount" type="number" step="0.01" placeholder="200.00"/></div>
+          </div>
+          <div id="userTransferResult" class="transfer-result" style="margin-top:14px"></div>
+          <div style="margin-top:14px"><button class="btn btn-purple" onclick="transferToUser()">Send →</button></div>
+        </div>
+
+        <!-- Operations list -->
+        <div class="card">
+          <div class="section-title">Operations history</div>
+          <div class="grid-3" style="margin-bottom:14px">
+            <div class="field" style="margin:0"><label>Wallet ID (opt)</label><input id="ops_wallet_id" type="number" placeholder="all wallets"/></div>
+            <div class="field" style="margin:0"><label>Date from</label><input id="ops_date_from" type="datetime-local"/></div>
+            <div class="field" style="margin:0"><label>Date to</label><input id="ops_date_to" type="datetime-local"/></div>
+          </div>
+          <button class="btn btn-secondary" onclick="getOperations()" style="margin-bottom:16px">Load operations</button>
+          <div id="opsList" class="ops-list"><div class="ops-empty">Press "Load operations" to fetch</div></div>
+        </div>
+      </div>
+
+      <!-- ── ANALYSIS ── -->
+      <div class="page" id="page-analysis">
+        <div class="page-header">
+          <div class="page-title">AI Analysis</div>
+          <div class="page-sub">Get AI-powered insights on your finances</div>
+        </div>
+        <div class="card">
+          <div class="section-title">Choose scope</div>
+          <div class="grid-2" style="align-items:flex-end; gap:12px">
+            <div class="field" style="margin:0"><label>Wallet ID (optional — blank = all)</label><input id="analysis_wallet_id" type="number" placeholder="leave blank for all wallets"/></div>
+            <button class="btn btn-secondary" onclick="getAnalysis()" style="height:44px">Get analysis</button>
+          </div>
+        </div>
+        <div id="analysisResult" style="display:none; margin-top:14px">
+          <div class="card">
+            <div class="section-title">Analysis</div>
+            <div class="analysis-block" id="analysisText"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ACCOUNT ── -->
+      <div class="page" id="page-account">
+        <div class="page-header">
+          <div class="page-title">Profile</div>
+          <div class="page-sub">Your account details</div>
+        </div>
+
+        <div id="profileDisplay" style="display:none">
+          <div class="profile-hero">
+            <div class="profile-avatar" id="profileAvatar">?</div>
+            <div class="profile-meta">
+              <div class="profile-name" id="profileName">—</div>
+              <div class="profile-email" id="profileEmail">—</div>
+              <div class="profile-badge" id="profileRole">user</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Update -->
+        <!-- Update profile -->
+      <div class="card">
+        <div class="section-title">Update profile</div>
+        <div class="grid-2">
+          <div class="field"><label>New username</label><input id="update_username" placeholder="leave blank to keep"/></div>
+          <div class="field"><label>New email</label><input id="update_email" type="email" placeholder="leave blank to keep"/></div>
+        </div>
+        <div style="margin-top:14px"><button class="btn btn-warning" onclick="updateUser()">Save profile changes</button></div>
+      </div>
+
+      <!-- Change password -->
+      <div class="card">
+        <div class="section-title">Change password</div>
+        <div class="grid-2">
+          <div class="field"><label>Current password</label><input id="current_password" type="password" placeholder="current password"/></div>
+          <div class="field"><label>New password</label><input id="new_password" type="password" placeholder="min 8 characters"/></div>
+        </div>
+        <div style="margin-top:14px"><button class="btn btn-warning" onclick="changePassword()">Change password</button></div>
+      </div>
+
+
+        <!-- Danger zone -->
+        <div class="card" style="border-color: rgba(255,95,109,0.15)">
+          <div class="section-title" style="color:var(--danger)">Danger zone</div>
+          <p style="font-size:13px; color:var(--muted); margin-bottom:16px; line-height:1.6">Permanently delete your account and all associated data. This cannot be undone.</p>
+          <button class="btn btn-danger" onclick="deleteUser()">Delete my account</button>
+        </div>
+      </div>
+
+      <!-- ── ADMIN ── -->
+      <div class="page" id="page-admin">
+        <div class="page-header">
+          <div class="page-title">Admin</div>
+          <div class="page-sub">User management</div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px">
+          <div class="section-title">Find user by ID</div>
+          <div class="grid-2" style="align-items:flex-end; gap:12px">
+            <div class="field" style="margin:0"><label>User ID</label><input id="admin_find_id" type="number" placeholder="1"/></div>
+            <button class="btn btn-secondary" onclick="adminFindUser()" style="height:44px">Find user</button>
+          </div>
+          <div id="adminUserResult" style="display:none; margin-top:16px"></div>
+        </div>
+
+        <div class="card" style="border-color: rgba(255,95,109,0.15)">
+          <div class="section-title" style="color:var(--danger)">Deactivate user</div>
+          <div class="field"><label>User ID</label><input id="admin_delete_id" type="number" placeholder="1"/></div>
+          <div style="margin-top:14px"><button class="btn btn-danger" onclick="adminDeleteUser()">Deactivate user</button></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+  let accessToken = "";
+  let currentUser = null;
+
+  /* ── Toast ── */
+  let toastTimer;
+  function toast(msg, type = 'ok') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'show ' + type;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.className = '', 3000);
+  }
+
+  /* ── Auth screen ── */
+  function authTab(name, el) {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('auth' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  }
+
+  /* ── Navigation ── */
+  function nav(page) {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const navEl = [...document.querySelectorAll('.nav-item')].find(i => i.getAttribute('onclick')?.includes(`'${page}'`));
+    if (navEl) navEl.classList.add('active');
+    const pageEl = document.getElementById('page-' + page);
+    if (pageEl) pageEl.classList.add('active');
+
+    if (page === 'account' && currentUser) renderProfile(currentUser);
+    if (page === 'dashboard') loadDashboard();
+  }
+
+  /* ── Request helper ── */
+  async function req(url, options = {}) {
+    const headers = options.headers || {};
+    if (accessToken) headers["Authorization"] = "Bearer " + accessToken;
+    options.headers = headers;
+    try {
+      const resp = await fetch(url, options);
+      let data;
+      try { data = await resp.json(); } catch { data = await resp.text(); }
+      return { ok: resp.status >= 200 && resp.status < 300, status: resp.status, data };
+    } catch(e) {
+      return { ok: false, status: 0, data: { detail: e.message } };
+    }
+  }
+
+  function errMsg(data) {
+    if (!data) return 'Unknown error';
+    if (typeof data === 'string') return data;
+    return data.detail || data.message || JSON.stringify(data);
+  }
+
+  /* ── AUTH ── */
+  async function registerUser() {
+    const body = { username: v("reg_username"), email: v("reg_email"), password: v("reg_password"),
+      initial_wallet_name: v("reg_wallet_name") || "Main" };
+    const r = await req("/users", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+    const errEl = document.getElementById('regError');
+    if (r.ok) {
+      errEl.className = 'error-box';
+      toast('Account created! Please sign in.', 'ok');
+      authTab('login', document.querySelectorAll('.auth-tab')[0]);
+    } else {
+      errEl.textContent = errMsg(r.data);
+      errEl.className = 'error-box show';
+    }
+  }
+
+  async function login() {
+    const form = new URLSearchParams();
+    form.append("username", v("login_username")); form.append("password", v("login_password"));
+    const r = await req("/users/token", { method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:form });
+    const errEl = document.getElementById('loginError');
+    if (r.ok && r.data.access_token) {
+      accessToken = r.data.access_token;
+      errEl.className = 'error-box';
+      await loadCurrentUser();
+      showApp();
+    } else {
+      errEl.textContent = errMsg(r.data);
+      errEl.className = 'error-box show';
+    }
+  }
+
+  async function loadCurrentUser() {
+    const r = await req("/users/me");
+    if (r.ok) {
+      currentUser = r.data;
+      updateSidebar(currentUser);
+    }
+  }
+
+  function updateSidebar(u) {
+    if (!u) return;
+    document.getElementById('sidebarName').textContent = u.username || '—';
+    document.getElementById('sidebarRole').textContent = u.role || 'user';
+    document.getElementById('sidebarAvatar').textContent = (u.username || '?')[0].toUpperCase();
+    document.getElementById('dashWelcome').textContent = u.username || '—';
+    if (u.role === 'admin') document.getElementById('adminNavItem').style.display = '';
+  }
+
+  function showApp() {
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('appShell').style.display = '';
+    loadDashboard();
+  }
+
+  function logout() {
+    accessToken = ""; currentUser = null;
+    document.getElementById('appShell').style.display = 'none';
+    document.getElementById('authScreen').style.display = '';
+    toast('Signed out', 'ok');
+  }
+
+  /* ── DASHBOARD ── */
+  async function loadDashboard() {
+    const opsEl = document.getElementById('dashOps');
+    opsEl.innerHTML = '<div class="ops-empty">Loading...</div>';
+
+    const [opsResp, totalResp] = await Promise.all([req('/operations'), req('/balance') ]);
+    if (totalResp.ok && totalResp.data) {
+      document.getElementById('dashBalance').textContent = fmtAmount(totalResp.data.balance ?? 0);
+    } else {
+      document.getElementById('dashBalance').textContent = fmtAmount(0);
+    }
+
+    if (opsResp.ok && Array.isArray(opsResp.data)) {
+      renderOpsInto(opsResp.data.slice(0,8), opsEl);
+      // calc stats
+      let income = 0, expense = 0;
+      opsResp.data.forEach(op => {
+        if (op.operation_type === 'income') income += Number(op.amount || 0);
+        if (op.operation_type === 'expense') expense += Number(op.amount || 0);
+      });
+      document.getElementById('dashIncome').textContent = fmtAmount(income);
+      document.getElementById('dashExpense').textContent = fmtAmount(expense);
+    } else {
+      opsEl.innerHTML = '<div class="ops-empty">No data yet</div>';
+    }
+  }
+
+  /* ── WALLETS ── */
+  async function getBalance() {
+    const name = v("wallet_name_balance");
+    if (!name) { toast('Enter wallet name', 'err'); return; }
+    const r = await req(`/${encodeURIComponent(name)}/balance`);
+    const el = document.getElementById('walletBalanceResult');
+    el.style.display = 'block';
+    if (r.ok) {
+      el.innerHTML = `
+        <div class="wallet-hero">
+          <div class="wallet-hero-label">Wallet</div>
+          <div class="wallet-hero-name">${esc(r.data.name || name)}</div>
+          <div class="wallet-hero-balance">${fmtAmount(r.data.balance ?? r.data.amount ?? 0)}</div>
+          <div class="wallet-hero-currency">${esc(r.data.currency || '')}</div>
+        </div>`;
+    } else {
+      el.innerHTML = `<div class="error-box show">${esc(errMsg(r.data))}</div>`;
+    }
+  }
+
+  async function createWallet() {
+    const body = { name: v("wallet_name_create"), currency: document.getElementById("wallet_currency").value };
+    if (!body.name) { toast('Enter wallet name', 'err'); return; }
+    const r = await req("/wallets", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+    const el = document.getElementById('walletCreateResult');
+    el.style.display = 'block';
+    if (r.ok) {
+      el.innerHTML = `<div class="success-box show" style="margin:0">✓ Wallet "<strong>${esc(r.data.name || body.name)}</strong>" created (${esc(r.data.currency || body.currency)})</div>`;
+      toast('Wallet created!', 'ok');
+    } else {
+      el.innerHTML = `<div class="error-box show">${esc(errMsg(r.data))}</div>`;
+    }
+  }
+
+  async function updateWallet() {
+    const body = { id: num("wallet_update_id"), name: v("wallet_update_name") };
+    const r = await req("/wallets", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+    if (r.ok) toast('Wallet updated!', 'ok');
+    else toast(errMsg(r.data), 'err');
+  }
+
+  async function deleteWallet() {
+    if (!confirm('Delete this wallet?')) return;
+    const body = { id: num("wallet_delete_id") };
+    const r = await req("/wallet_delete", { method:"DELETE", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+    if (r.ok) toast('Wallet deleted', 'ok');
+    else toast(errMsg(r.data), 'err');
+  }
+
+  /* ── OPERATIONS ── */
+  async function addIncome() {
+    const body = { wallet_name: v("income_wallet_name"), amount: parseFloat(v("income_amount")), description: v("income_description") };
+    if (!body.wallet_name || isNaN(body.amount)) { toast('Fill in all fields', 'err'); return; }
+    const r = await req("/operations/income", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+    if (r.ok) {
+      toast(`+${fmtAmount(body.amount)} added to ${body.wallet_name}`, 'ok');
+      document.getElementById('income_amount').value = '';
+      document.getElementById('income_description').value = '';
+    } else toast(errMsg(r.data), 'err');
+  }
+
+  async function addExpense() {
+    const body = { wallet_name: v("expense_wallet_name"), amount: parseFloat(v("expense_amount")), description: v("expense_description") };
+    if (!body.wallet_name || isNaN(body.amount)) { toast('Fill in all fields', 'err'); return; }
+    const r = await req("/operations/expense", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+    if (r.ok) {
+      toast(`-${fmtAmount(body.amount)} from ${body.wallet_name}`, 'ok');
+      document.getElementById('expense_amount').value = '';
+      document.getElementById('expense_description').value = '';
+    } else toast(errMsg(r.data), 'err');
+  }
+
+  async function getOperations() {
+    const p = new URLSearchParams();
+    if (v("ops_wallet_id")) p.append("wallet_id", v("ops_wallet_id"));
+    if (v("ops_date_from")) p.append("date_from", new Date(v("ops_date_from")).toISOString());
+    if (v("ops_date_to")) p.append("date_to", new Date(v("ops_date_to")).toISOString());
+    const qs = p.toString() ? "?" + p.toString() : "";
+    const r = await req(`/operations${qs}`);
+    const el = document.getElementById('opsList');
+    if (r.ok && Array.isArray(r.data)) renderOpsInto(r.data, el);
+    else el.innerHTML = `<div class="ops-empty">${esc(errMsg(r.data))}</div>`;
+  }
+
+  function renderOpsInto(ops, el) {
+    if (!ops.length) { el.innerHTML = '<div class="ops-empty">No operations found</div>'; return; }
+    el.innerHTML = ops.map(op => {
+      const isIncome = op.operation_type === 'income';
+      const isExpense = op.operation_type === 'expense';
+      const icon = isIncome ? '↑' : isExpense ? '↓' : '⇄';
+      const iconClass = isIncome ? 'income' : isExpense ? 'expense' : 'transfer';
+      const amountSign = isIncome ? '+' : isExpense ? '−' : '';
+      const date = op.created_at ? new Date(op.created_at).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+      return `
+        <div class="op-item">
+          <div class="op-icon ${iconClass}">${icon}</div>
+          <div class="op-body">
+            <div class="op-desc">${esc(op.description || op.type || 'Operation')}</div>
+            <div class="op-meta">${esc(op.wallet_name || '')}${date ? ' · ' + date : ''}</div>
+          </div>
+          <div class="op-amount ${iconClass}">${amountSign}${fmtAmount(op.amount)}</div>
+        </div>`;
+    }).join('');
+  }
+
+  async function internalTransfer() {
+    const body = { from_wallet_id: num("int_from_wallet"), to_wallet_id: num("int_to_wallet"), amount: parseFloat(v("int_amount")) };
+    if (!body.from_wallet_id || !body.to_wallet_id || isNaN(body.amount)) { toast('Fill in all fields', 'err'); return; }
+    const r = await req("/operations/iternal_transfer", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+    const el = document.getElementById('internalTransferResult');
+    if (r.ok) {
+      el.className = 'transfer-result show';
+      el.innerHTML = `<div class="transfer-result-icon">⇄</div><div class="transfer-result-amount">${fmtAmount(body.amount)}</div><div class="transfer-result-desc">Transferred from wallet ${body.from_wallet_id} → ${body.to_wallet_id}</div>`;
+      toast('Transfer complete', 'ok');
+    } else { el.className = ''; toast(errMsg(r.data), 'err'); }
+  }
+
+  async function transferToUser() {
+    const body = { to_user_id: num("transfer_user_id"), wallet_id: num("transfer_wallet_id"), amount: parseFloat(v("transfer_amount")) };
+    if (!body.to_user_id || !body.wallet_id || isNaN(body.amount)) { toast('Fill in all fields', 'err'); return; }
+    const r = await req("/operations/transfer", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+    const el = document.getElementById('userTransferResult');
+    if (r.ok) {
+      el.className = 'transfer-result show';
+      el.innerHTML = `<div class="transfer-result-icon">↗</div><div class="transfer-result-amount">${fmtAmount(body.amount)}</div><div class="transfer-result-desc">Sent to user #${body.to_user_id}</div>`;
+      toast('Transfer sent', 'ok');
+    } else { el.className = ''; toast(errMsg(r.data), 'err'); }
+  }
+
+  /* ── ANALYSIS ── */
+  async function getAnalysis() {
+    const wid = v("analysis_wallet_id");
+    const url = wid ? `/operations/analysis/${wid}` : `/operations/analysis`;
+    const resultEl = document.getElementById('analysisResult');
+    const textEl = document.getElementById('analysisText');
+    resultEl.style.display = 'none';
+    textEl.textContent = 'Loading...';
+    const r = await req(url);
+    resultEl.style.display = 'block';
+    if (r.ok) {
+      textEl.textContent = typeof r.data === 'string' ? r.data : (r.data.analysis || r.data.result || JSON.stringify(r.data, null, 2));
+    } else {
+      textEl.style.color = 'var(--danger)';
+      textEl.textContent = errMsg(r.data);
+    }
+  }
+
+  /* ── ACCOUNT ── */
+  function renderProfile(u) {
+    if (!u) return;
+    const el = document.getElementById('profileDisplay');
+    el.style.display = 'block';
+    document.getElementById('profileAvatar').textContent = (u.username || '?')[0].toUpperCase();
+    document.getElementById('profileName').textContent = u.username || '—';
+    document.getElementById('profileEmail').textContent = u.email || '—';
+    document.getElementById('profileRole').textContent = u.role || 'user';
+  }
+
+  function openAuthForm(name) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+  const map = { login: 'authLogin', register: 'authRegister', forgot: 'authForgot', reset: 'authReset' };
+  document.getElementById(map[name]).classList.add('active');
+
+  // подсветка табов только для login/register
+  if (name === 'login') document.querySelectorAll('.auth-tab')[0]?.classList.add('active');
+  if (name === 'register') document.querySelectorAll('.auth-tab')[1]?.classList.add('active');
+}
+
+async function forgotPassword() {
+  const email = v("forgot_email");
+  const errEl = document.getElementById("forgotError");
+  const okEl = document.getElementById("forgotMsg");
+
+  errEl.className = "error-box";
+  okEl.style.display = "none";
+  okEl.className = "success-box";
+
+  if (!email) {
+    errEl.textContent = "Enter email";
+    errEl.className = "error-box show";
+    return;
+  }
+
+  const r = await req("/users/forgot-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email })
+  });
+
+  if (r.ok) {
+    okEl.textContent = r.data?.message || "If account exists, reset instructions were sent.";
+    okEl.style.display = "block";
+    okEl.className = "success-box show";
+    toast("Check your email", "ok");
+  } else {
+    errEl.textContent = errMsg(r.data);
+    errEl.className = "error-box show";
+  }
+}
+
+async function resetPassword() {
+  const token = v("reset_token");
+  const newPassword = v("reset_new_password");
+  const errEl = document.getElementById("resetError");
+  errEl.className = "error-box";
+
+  if (!token || !newPassword) {
+    errEl.textContent = "Fill token and new password";
+    errEl.className = "error-box show";
+    return;
+  }
+
+  const r = await req("/users/reset-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: token, new_password: newPassword })
+  });
+
+  if (r.ok) {
+    toast("Password reset successfully. Please sign in.", "ok");
+    document.getElementById("reset_token").value = "";
+    document.getElementById("reset_new_password").value = "";
+    openAuthForm("login");
+  } else {
+    errEl.textContent = errMsg(r.data);
+    errEl.className = "error-box show";
+  }
+}
+
+async function changePassword() {
+  const currentPassword = v("current_password");
+  const newPassword = v("new_password");
+
+  if (!currentPassword || !newPassword) {
+    toast("Fill current and new password", "err");
+    return;
+  }
+
+  const r = await req("/users/me/password", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword
+    })
+  });
+
+  if (r.ok) {
+    document.getElementById("current_password").value = "";
+    document.getElementById("new_password").value = "";
+    toast(r.data?.message || "Password changed successfully!", "ok");
+  } else {
+    toast(errMsg(r.data), "err");
+  }
+}
+
+// Обновленная updateUser без password
+async function updateUser() {
+  const body = {};
+  if (v("update_username")) body.username = v("update_username");
+  if (v("update_email")) body.email = v("update_email");
+
+  if (!Object.keys(body).length) {
+    toast("Nothing to update", "err");
+    return;
+  }
+
+  const r = await req("/users/me", {
+    method:"PATCH",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(body)
+  });
+
+  if (r.ok) {
+    currentUser = r.data;
+    updateSidebar(currentUser);
+    renderProfile(currentUser);
+    toast('Profile updated!', 'ok');
+  } else {
+    toast(errMsg(r.data), 'err');
+  }
+}
+
+function openAuthForm(name) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+
+  const map = {
+    login: 'authLogin',
+    register: 'authRegister',
+    forgot: 'authForgot',
+    reset: 'authReset'
+  };
+
+  const targetId = map[name] || 'authLogin';
+  const target = document.getElementById(targetId);
+  if (target) target.classList.add('active');
+
+  // Подсветка табов только для login/register
+  const tabs = document.querySelectorAll('.auth-tab');
+  if (tabs.length >= 2) {
+    if (name === 'login') tabs[0].classList.add('active');
+    if (name === 'register') tabs[1].classList.add('active');
+  }
+}
+
+function initAuthFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  const view = params.get('view');
+
+  // Вариант 1: /?view=reset&token=...
+  // Вариант 2: /reset-password?token=... (если будет такой route)
+  if (token) {
+    openAuthForm('reset');
+
+    const tokenInput = document.getElementById('reset_token');
+    if (tokenInput) tokenInput.value = token;
+
+    const passInput = document.getElementById('reset_new_password');
+    if (passInput) passInput.focus();
+
+    return;
+  }
+
+  if (view === 'forgot') {
+    openAuthForm('forgot');
+    return;
+  }
+
+  if (view === 'register') {
+    openAuthForm('register');
+    return;
+  }
+
+  openAuthForm('login');
+}
+
+
+
+  async function deleteUser() {
+    if (!confirm('Delete your account? This cannot be undone.')) return;
+    const r = await req("/users/me", { method:"DELETE" });
+    if (r.ok || r.status === 204) { logout(); }
+    else toast(errMsg(r.data), 'err');
+  }
+
+  /* ── ADMIN ── */
+  async function adminFindUser() {
+    const id = v("admin_find_id");
+    if (!id) { toast('Enter user ID', 'err'); return; }
+    const r = await req(`/admin/${id}`);
+    const el = document.getElementById('adminUserResult');
+    el.style.display = 'block';
+    if (r.ok && r.data) {
+      const u = r.data;
+      el.innerHTML = `
+        <div class="admin-user-card">
+          ${row('ID', u.id)}
+          ${row('Username', u.username)}
+          ${row('Email', u.email)}
+          ${row('Role', u.role)}
+          ${row('Created', u.created_at ? new Date(u.created_at).toLocaleString() : '—')}
+          ${row('Active', u.is_active !== undefined ? (u.is_active ? 'Yes' : 'No') : '—')}
+        </div>`;
+    } else {
+      el.innerHTML = `<div class="error-box show">${esc(errMsg(r.data))}</div>`;
+    }
+  }
+
+  async function adminDeleteUser() {
+    const id = v("admin_delete_id");
+    if (!id) { toast('Enter user ID', 'err'); return; }
+    if (!confirm(`Deactivate user #${id}?`)) return;
+    const r = await req(`/admin/${id}`, { method:"DELETE" });
+    if (r.ok || r.status === 204) toast(`User #${id} deactivated`, 'ok');
+    else toast(errMsg(r.data), 'err');
+  }
+
+  function row(k, val) {
+    return `<div class="admin-user-row"><span class="admin-user-key">${k}</span><span class="admin-user-val">${esc(String(val ?? '—'))}</span></div>`;
+  }
+
+  /* ── Helpers ── */
+  function v(id) { return document.getElementById(id)?.value.trim() || ''; }
+  function num(id) { const val = v(id); return val ? parseInt(val) : undefined; }
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmtAmount(n) {
+    const num = parseFloat(n) || 0;
+    return num.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+document.addEventListener('DOMContentLoaded', () => {
+  initAuthFromUrl();
+  window.history.replaceState({}, document.title, window.location.pathname);
+});
+
+
+
+</script>
+</body>
+</html>
