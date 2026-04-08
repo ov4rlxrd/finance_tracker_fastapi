@@ -12,18 +12,16 @@
 
 ## О проекте
 
-**Finance Tracker** — это мой учебный backend-проект, в котором я практикую:
-- проектирование API на FastAPI;
-- аутентификацию/авторизацию (JWT);
-- работу с БД через SQLAlchemy (async);
-- миграции Alembic;
-- слоистую архитектуру (routers / services / repositories).
+**Finance Tracker** — это мой учебный backend-проект, для изучения:
+- проектирования API на FastAPI;
+- аутентификации/авторизации (JWT);
+- работы с БД через SQLAlchemy (async);
+- миграций Alembic;
+- слоистой архитектуры (routers / services / repositories).
 
-> ⚠️ **Важно:** это **pet project**, созданный в учебных целях, а не production-ready банковский сервис.
+> ⚠️ **Важно:** это **pet project**, созданный в учебных целях.
 
 ---
-
-## Честность и прозрачность
 
 - Backend-логика, архитектура и API реализуются мной в процессе обучения.
 - **Frontend (HTML/CSS/JS) частично создан с помощью ИИ** для ускорения работы над интерфейсом.
@@ -51,7 +49,7 @@
 - **База данных:** SQLAlchemy 2.x (async), SQLite/PostgreSQL
 - **Миграции:** Alembic
 - **Auth/Security:** JWT, password hashing
-- **Инфраструктура:** Uvicorn, Docker (частично/в планах)
+- **Инфраструктура:** Uvicorn, Docker (частично)
 - **Шаблоны:** Jinja2 templates (для UI и email)
 
 ---
@@ -68,13 +66,6 @@
 - `app/core` — security/config/shared utils
 - `alembic` — миграции
 
-Такой подход помогает разделять ответственность и упрощает поддержку кода.
 
 ---
 
-## Быстрый старт
-
-### 1) Клонировать репозиторий
-```powershell
-git clone <your-repo-url>
-cd finance_tracker_study
