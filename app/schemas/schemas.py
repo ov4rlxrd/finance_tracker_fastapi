@@ -103,17 +103,19 @@ class WalletCreate(BaseModel):
     name: str = Field(..., max_length=127)
     currency: CurrencyEnum = CurrencyEnum.RUB
 
-class WalletBalanceResponse(BaseModel):
-    name: str
-    balance: Decimal = Field(ge=0)
-    currency: CurrencyEnum = CurrencyEnum.RUB
 
 class WalletDelete(BaseModel):
     name: str = Field(..., max_length=127)
 
+class WalletTotalBalanceResponse(BaseModel):
+    name: str
+    balance: Decimal
+    currency: CurrencyEnum
+
 class WalletUpdate(BaseModel):
     old_name: str = Field(..., max_length=127)
     new_name: str = Field(..., max_length=127)
+    
 
 class WalletResponse(BaseModel):
     id:int

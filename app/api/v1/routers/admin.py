@@ -1,10 +1,8 @@
-from fastapi import APIRouter
-from starlette import status
-
 from app.api.dependencies.roles import AdminUser
 from app.database import SessionDep
-from app.schemas.schemas import UserResponse, UserAdminResponse
+from app.schemas.schemas import UserAdminResponse
 from app.service.user_service import find_user, delete_user_service
+from fastapi import APIRouter
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 

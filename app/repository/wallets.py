@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
+from app.exceptions.wallet import InsufficientFunds
 from sqlalchemy import select, exists, Result
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -48,7 +49,7 @@ class WalletRepository:
         if wallet is None:
             return None
         if wallet.balance < amount:
-            raise ValueError("Insufficient balance")
+            raise InsufficientFunds()
         wallet.balance -= amount
         await session.flush()
         await session.refresh(wallet)
@@ -105,9 +106,12 @@ class WalletRepository:
     @classmethod
     async def _get_active_wallet(cls, wallet_name: str, user_id: int, session: AsyncSession) -> Wallet | None:
         return await session.scalar(
-            select(Wallet).where(Wallet.name == wallet_name,
+            select(Wallet)
+            .where(Wallet.name == wallet_name,
                                  Wallet.user_id == user_id,
                                  Wallet.is_active.is_(True),
                                  Wallet.deleted_at.is_(None),
+
                                  )
+            .with_for_update()
                    )

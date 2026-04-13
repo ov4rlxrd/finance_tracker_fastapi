@@ -22,3 +22,4 @@ class InsufficientFunds(AppException):
 class CurrencyConversionError(AppException):
     status_code = status.HTTP_400_BAD_REQUEST
     detail = "Currency conversion error"
+
