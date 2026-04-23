@@ -6,8 +6,9 @@ from app.schemas.schemas import UserCreate, UserResponse, UserUpdate, ForgotPass
     ChangePasswordRequest
 from app.service.auth_service import login_for_access_token_service
 from app.service.user_service import create_user, delete_user_service, update_user_service, \
-    forgot_password_service, reset_password_service, change_password_service
-from app.utils.email_utils import send_password_reset_email
+    forgot_password_service, reset_password_service, change_password_service, verify_user_service, \
+    verify_user_account_service
+from app.utils.email_utils import send_password_reset_email, send_verify_email
 from fastapi import APIRouter, BackgroundTasks
 from fastapi.params import Depends
 from fastapi.security import OAuth2PasswordRequestForm
@@ -16,8 +17,25 @@ from starlette import status
 users_router = APIRouter(prefix="/users", tags=["users"])
 
 @users_router.post("", status_code=status.HTTP_201_CREATED)
-async def add_user(user: UserCreate, session: SessionDep) -> UserResponse:
-    return await create_user(user, session)
+async def add_user(user: UserCreate,background_tasks: BackgroundTasks, session: SessionDep) -> UserResponse:
+    new_user = await create_user(user, session)
+
+    payload = await verify_user_service(user.email, session)
+
+    if payload:
+        background_tasks.add_task(
+            send_verify_email,
+            to_email=user.email,
+            username=payload.username,
+            token=payload.token,
+        )
+    return new_user
+
+
+
+@users_router.get("/verify/{token}", status_code=status.HTTP_200_OK)
+async def verify_user(token: str, session: SessionDep):
+    return await verify_user_account_service(token, session)
 
 
 @users_router.post("/token", status_code=status.HTTP_200_OK)

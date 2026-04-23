@@ -28,6 +28,24 @@ async def send_email(
                             start_tls=settings.mail_use_tls)
 
 
+
+async def send_verify_email(
+        to_email: str,
+        username: str,
+        token:str
+):
+    verify_url = f"{settings.frontend_url}/users/verify/{token}"
+
+    template = templates.env.get_template("email/verify_user.html")
+    html_content = template.render(username=username, verify_url=verify_url)
+
+    plain_text = f'''Hi {username}, 
+    You requested a email verify. Please click the link below to verify your email:
+    {verify_url}
+    This link will expire in 1 hour
+    '''
+    await send_email(to_email=to_email, subject="Verify your email", plain_text_message=plain_text, html_content=html_content)
+
 async def send_password_reset_email(
         to_email: str,
         username: str,

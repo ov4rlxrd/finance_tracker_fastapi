@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, UTC, tzinfo
 
-from app.core.security import generate_reset_token, hash_reset_token, hash_password, verify_password
+from app.core.security import generate_reset_token, hash_reset_token, hash_password, verify_password, \
+    create_verify_token, verify_verify_token
 from config import settings
 from fastapi import HTTPException
 from pydantic import EmailStr
@@ -9,7 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.exceptions.user import UserAlreadyExists, EmailAlreadyExists, UserNotFound, ResetTokenException, \
     PasswordIncorrect
 from app.repository.users import UserRepository, AuthRepository, AdminRepository
-from app.schemas.schemas import UserCreate, UserResponse, UserUpdate, UserAdminResponse, ForgotPasswordEmailData
+from app.schemas.schemas import UserCreate, UserResponse, UserUpdate, UserAdminResponse, ForgotPasswordEmailData, \
+    VerifyRequest
+from starlette import status
 
 
 async def create_user(user: UserCreate, session: AsyncSession) -> UserResponse:
@@ -82,3 +85,31 @@ async def change_password_service(current_password:str, new_password:str, user_i
     await UserRepository.delete_reset_tokens_for_user(user.id, session)
     await session.commit()
     return True
+
+async def verify_user_service(email:str, session: AsyncSession):
+    user = await AuthRepository.get_by_email(email, session)
+    if not user:
+        raise UserNotFound()
+    token = create_verify_token(data={"sub": str(user.id)})
+
+    return VerifyRequest(token=token, username=user.username, email=user.email)
+
+
+async def verify_user_account_service(token:str, session: AsyncSession):
+    user_id = verify_verify_token(token)
+    try:
+        user_id_int = int(user_id)
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user = await UserRepository.find_by_id(user_id_int, session)
+    if not user:
+        raise UserNotFound()
+    if user.is_verified:
+        return {"message": "Account already verified"}
+    user.is_verified = True
+    await session.commit()
+    return {"message": "User account is verified"}

@@ -3,6 +3,7 @@ from decimal import Decimal
 import aiohttp
 
 from app.core.enums import CurrencyEnum
+from app.exceptions.exhange import RateException
 
 
 async def get_exchange_rate(base: CurrencyEnum, target: CurrencyEnum) -> Decimal:
@@ -20,6 +21,6 @@ async def get_exchange_rate(base: CurrencyEnum, target: CurrencyEnum) -> Decimal
                 rate = base_map.get(target)
         if rate is not None and isinstance(rate, (int, float)):
             return Decimal(rate)
-        raise KeyError('Rate not found')
-    except KeyError as e:
+        raise RateException()
+    except RateException as e:
         raise e

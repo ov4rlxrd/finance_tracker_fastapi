@@ -940,7 +940,7 @@
   async function getBalance() {
     const name = v("wallet_name_balance");
     if (!name) { toast('Enter wallet name', 'err'); return; }
-    const r = await req(`/${encodeURIComponent(name)}/balance`);
+    const r = await req(`wallets/${encodeURIComponent(name)}`);
     const el = document.getElementById('walletBalanceResult');
     el.style.display = 'block';
     if (r.ok) {

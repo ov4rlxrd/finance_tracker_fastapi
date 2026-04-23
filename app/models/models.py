@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from pydantic import model_validator
@@ -18,11 +18,11 @@ class User(Model):
     password_hash: Mapped[str] = mapped_column(String(200),nullable=False)
     role: Mapped[str] = mapped_column(default="user", nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
-
+    is_verified: Mapped[bool] = mapped_column(default=False, nullable=False)
 
     wallets: Mapped[list[Wallet]] = relationship(back_populates="user", cascade="all, delete-orphan", lazy="selectin")
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(), nullable=False)
-    deleted_at: Mapped[datetime | None] = mapped_column(default=None, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None, nullable=True)
 
     reset_tokens: Mapped[list[PasswordResetToken]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
@@ -46,8 +46,8 @@ class Wallet(Model):
 
     user: Mapped[User] = relationship(back_populates="wallets")
 
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(), nullable=False)
-    deleted_at: Mapped[datetime | None] = mapped_column(default=None, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None, nullable=True)
 
 
 class Operation(Model):
@@ -61,7 +61,7 @@ class Operation(Model):
     category: Mapped[str | None] = mapped_column(default=None)
     subcategory: Mapped[str | None] = mapped_column(default=None)
 
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
 
 class PasswordResetToken(Model):
@@ -71,6 +71,8 @@ class PasswordResetToken(Model):
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     user: Mapped[User] = relationship(back_populates="reset_tokens")
+
+

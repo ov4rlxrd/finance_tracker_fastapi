@@ -29,6 +29,13 @@ def generate_reset_token() ->str:
 def hash_reset_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
+def generate_verify_token(token: str) -> str:
+    return secrets.token_urlsafe(32)
+
+def hash_verify_token(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
     if expires_delta:
@@ -47,6 +54,26 @@ def verify_access_token(token: str) -> str | None:
             settings.secret_key.get_secret_value(),
             algorithms=[settings.algorithm],
             options={"require": ["exp", "sub"]}
+        )
+    except jwt.InvalidTokenError:
+        return None
+    else:
+        return payload.get("sub")
+
+
+def create_verify_token(data: dict):
+    to_encode = data.copy()
+    to_encode.update({"exp": datetime.now(timezone.utc) + timedelta(hours=24)})
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key.get_secret_value(), algorithm=settings.algorithm)
+    return encoded_jwt
+
+def verify_verify_token(token: str):
+    try:
+        payload = jwt.decode(
+            token,
+            settings.secret_key.get_secret_value(),
+            algorithms=[settings.algorithm],
+            options={"require": ["exp", "sub"]},
         )
     except jwt.InvalidTokenError:
         return None

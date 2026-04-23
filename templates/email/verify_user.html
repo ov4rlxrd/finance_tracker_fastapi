@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Подтверждение email - Flux</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#0a0a0f; font-family:Arial, Helvetica, sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#0a0a0f; padding:24px 10px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="620" cellspacing="0" cellpadding="0" style="width:620px; max-width:620px; background-color:#111118; border:1px solid rgba(255,255,255,0.08); border-radius:16px; overflow:hidden;">
+            <!-- Header -->
+            <tr>
+              <td style="padding:28px 28px 22px 28px; background-color:#111118; border-bottom:1px solid rgba(255,255,255,0.08);">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td align="left" style="font-size:22px; font-weight:800; color:#e8e8f0; letter-spacing:0.2px;">
+                      Flux
+                    </td>
+                    <td align="right" style="font-size:12px; color:#6b6b80;">
+                      Finance Tracker
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="padding:30px 28px;">
+                <p style="margin:0 0 10px 0; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:#6b6b80;">
+                  Безопасность аккаунта
+                </p>
+
+                <h1 style="margin:0 0 16px 0; font-size:24px; line-height:1.3; color:#e8e8f0; font-weight:800;">
+                  Подтверждение email
+                </h1>
+
+                <p style="margin:0 0 14px 0; font-size:16px; line-height:1.6; color:#c9c9d6;">
+                  Привет, <span style="color:#4af0c4; font-weight:700;">{{ username }}</span>.
+                </p>
+
+                <p style="margin:0 0 24px 0; font-size:15px; line-height:1.7; color:#b4b4c3;">
+                  Подтверди email, чтобы завершить регистрацию и активировать аккаунт.
+                  Если это был не ты, просто проигнорируй письмо.
+                </p>
+
+                <!-- CTA Button -->
+                <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 24px 0;">
+                  <tr>
+                    <td align="center" style="border-radius:12px; background:linear-gradient(135deg, #4af0c4, #6a8fff);">
+                      <a href="{{ verify_url }}"
+                         style="display:inline-block; padding:14px 24px; font-size:15px; font-weight:700; color:#051a14; text-decoration:none;">
+                        Подтвердить email
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#18181f; border:1px solid rgba(255,255,255,0.07); border-radius:12px;">
+                  <tr>
+                    <td style="padding:14px 16px; font-size:13px; line-height:1.6; color:#9b9bb0;">
+                      Ссылка активна <strong style="color:#e8e8f0;">1 час</strong>.
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin:18px 0 0 0; font-size:12px; line-height:1.7; color:#7d7d93; word-break:break-all;">
+                  Если кнопка не работает, открой ссылку вручную:<br />
+                  <a href="{{ verify_url }}" style="color:#6a8fff; text-decoration:none;">{{ verify_url }}</a>
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding:18px 28px 24px 28px; border-top:1px solid rgba(255,255,255,0.08); background-color:#111118;">
+                <p style="margin:0; font-size:12px; line-height:1.6; color:#6b6b80; text-align:center;">
+                  Это автоматическое письмо от Flux. Пожалуйста, не отвечай на него.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <table role="presentation" width="620" cellspacing="0" cellpadding="0" style="width:620px; max-width:620px;">
+            <tr>
+              <td style="padding:12px 4px 0 4px; text-align:center; font-size:11px; color:#4a4a5a;">
+                © Flux Finance Tracker
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

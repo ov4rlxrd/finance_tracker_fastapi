@@ -5,10 +5,8 @@ from fastapi import Depends
 from config import settings
 
 
-# 2. Создание движка
 engine = create_async_engine(settings.database_url)
 
-# 3. Создание фабрики сессий
 new_session = async_sessionmaker(engine, expire_on_commit=False)
 
 

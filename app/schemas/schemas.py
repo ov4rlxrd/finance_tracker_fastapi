@@ -100,7 +100,7 @@ class WalletBase(BaseModel):
 
 
 class WalletCreate(BaseModel):
-    name: str = Field(..., max_length=127)
+    name: str = Field(..., max_length=127, min_length=1)
     currency: CurrencyEnum = CurrencyEnum.RUB
 
 
@@ -114,7 +114,7 @@ class WalletTotalBalanceResponse(BaseModel):
 
 class WalletUpdate(BaseModel):
     old_name: str = Field(..., max_length=127)
-    new_name: str = Field(..., max_length=127)
+    new_name: str = Field(..., max_length=127, min_length=1)
     
 
 class WalletResponse(BaseModel):
@@ -156,3 +156,8 @@ class ResetPasswordRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str = Field(min_length=8)
+
+class VerifyRequest(BaseModel):
+    email: EmailStr
+    username: str
+    token: str
