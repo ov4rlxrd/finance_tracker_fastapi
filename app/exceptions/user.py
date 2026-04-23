@@ -28,3 +28,11 @@ class ResetTokenException(AppException):
 class PasswordIncorrect(AppException):
     status_code = status.HTTP_400_BAD_REQUEST
     detail = 'Incorrect password'
+
+class InvalidToken(AppException):
+    status_code = status.HTTP_401_UNAUTHORIZED
+    detail = 'Invalid or Expired token'
+
+class AccountNotVerified(AppException):
+    status_code = status.HTTP_401_UNAUTHORIZED
+    detail = 'Account not verified'

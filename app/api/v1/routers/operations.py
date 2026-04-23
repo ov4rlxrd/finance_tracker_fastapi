@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from app.api.dependencies.verified import VerifiedUser
 from fastapi import APIRouter, Query
 
 from app.api.dependencies.auth import CurrentUser
@@ -48,9 +49,9 @@ async def create_transfer(current_user: CurrentUser, payload: TransferCreateSche
                                                                   session)
 
 @operations_router.get("/analysis/{wallet_id}")
-async def get_analysis_for_wallet(current_user: CurrentUser, session: SessionDep, wallet_id: int):
+async def get_analysis_for_wallet(current_user: CurrentUser, session: SessionDep, wallet_id: int, verified_user: VerifiedUser):
     return await get_operations_analysis(current_user.id, session, wallet_id)
 
 @operations_router.get("/analysis")
-async def get_analysis(current_user: CurrentUser, session: SessionDep):
+async def get_analysis(current_user: CurrentUser, session: SessionDep, verified_user: VerifiedUser):
     return await get_operations_analysis(current_user.id, session,)
