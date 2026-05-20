@@ -137,3 +137,17 @@ async def test_delete_user(client: AsyncClient):
     )
 
     assert response.status_code == 401
+
+@pytest.mark.anyio
+async def test_update_user(client: AsyncClient):
+    await create_test_user(client)
+    token = await login_user(client)
+    headers = auth_header(token)
+
+    response = await client.patch(
+        "users/me",
+    json={"username": "test_user5"},
+    headers=headers
+    )
+    assert response.status_code == 200
+    assert response.json()["username"] == "test_user5"

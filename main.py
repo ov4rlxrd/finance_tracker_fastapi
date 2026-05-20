@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from starlette.responses import JSONResponse, HTMLResponse
 
 from app.api.v1.routers.admin import admin_router
+from app.api.v1.routers.posts import posts_router
 from app.exceptions.base import AppException
 
 from fastapi.templating import Jinja2Templates
@@ -44,3 +45,4 @@ app.include_router(wallets_router)
 app.include_router(operations_router)
 app.include_router(users_router)
 app.include_router(admin_router)
+app.include_router(posts_router)

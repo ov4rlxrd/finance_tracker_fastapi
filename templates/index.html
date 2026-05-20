@@ -329,6 +329,35 @@
     .op-amount.transfer { color: var(--accent2); }
     .ops-empty { text-align: center; padding: 36px; color: var(--muted); font-size: 13px; }
 
+    /* ── Posts list ── */
+    .posts-list { display: flex; flex-direction: column; gap: 12px; }
+    .post-item {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px;
+      transition: border-color 0.15s;
+    }
+    .post-item:hover { border-color: var(--border-hi); }
+    .post-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .post-text { font-size: 13px; color: var(--text); line-height: 1.6; white-space: pre-wrap; }
+    .post-meta { font-size: 11px; color: var(--muted); margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .post-badge {
+      background: var(--surface3); border: 1px solid var(--border);
+      border-radius: 999px; padding: 2px 8px; font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .like-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: 1px solid var(--border); border-radius: 999px;
+      background: var(--surface3); color: var(--muted);
+      padding: 2px 8px; font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.5px; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .like-btn:hover { border-color: var(--border-hi); color: var(--text); }
+    .like-btn.active { color: var(--danger); border-color: rgba(255,95,109,0.35); }
+    .like-btn:disabled { opacity: 0.6; cursor: default; }
+    .posts-empty { text-align: center; padding: 36px; color: var(--muted); font-size: 13px; }
+
     /* ── Analysis display ── */
     .analysis-block {
       background: var(--surface2); border: 1px solid var(--border);
@@ -435,9 +464,6 @@
           <div style="margin-top:14px">
             <button class="btn btn-primary" onclick="login()">Sign in →</button>
           </div>
-        <div style="margin-top:12px; display:flex; justify-content:space-between; gap:10px;">
-          <button class="btn btn-secondary btn-sm" type="button" onclick="openAuthForm('forgot')">Forgot password?</button>
-        </div>
 
         </div>
       </div>
@@ -526,6 +552,9 @@
         </div>
         <div class="nav-item" onclick="nav('operations')">
           <span class="nav-icon">⇅</span> Operations
+        </div>
+        <div class="nav-item" onclick="nav('posts')">
+          <span class="nav-icon">✎</span> Posts
         </div>
         <div class="nav-item" onclick="nav('analysis')">
           <span class="nav-icon">◎</span> Analysis
@@ -692,6 +721,20 @@
         </div>
       </div>
 
+      <!-- ── POSTS ── -->
+      <div class="page" id="page-posts">
+        <div class="page-header">
+          <div class="page-title">Posts</div>
+          <div class="page-sub">User posts feed</div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">Latest posts</div>
+          <button class="btn btn-secondary" onclick="loadPosts()" style="margin-bottom:16px">Load posts</button>
+          <div id="postsList" class="posts-list"><div class="posts-empty">Press "Load posts" to fetch</div></div>
+        </div>
+      </div>
+
       <!-- ── ANALYSIS ── -->
       <div class="page" id="page-analysis">
         <div class="page-header">
@@ -824,6 +867,7 @@
 
     if (page === 'account' && currentUser) renderProfile(currentUser);
     if (page === 'dashboard') loadDashboard();
+    if (page === 'posts') loadPosts();
   }
 
   /* ── Request helper ── */
@@ -1065,6 +1109,61 @@
     } else { el.className = ''; toast(errMsg(r.data), 'err'); }
   }
 
+  /* ── POSTS ── */
+  async function loadPosts() {
+    const el = document.getElementById('postsList');
+    if (!el) return;
+    el.innerHTML = '<div class="posts-empty">Loading...</div>';
+    const r = await req('/posts');
+    if (r.ok && Array.isArray(r.data)) renderPostsInto(r.data, el);
+    else el.innerHTML = `<div class="posts-empty">${esc(errMsg(r.data))}</div>`;
+  }
+
+  function renderPostsInto(posts, el) {
+    if (!posts.length) { el.innerHTML = '<div class="posts-empty">No posts yet</div>'; return; }
+    el.innerHTML = posts.map(post => {
+      const date = post.created_at ? new Date(post.created_at).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+      const userLabel = post.username ? post.username : 'User';
+      const likes = post.likes ?? 0;
+      const liked = Boolean(post.is_liked);
+      return `
+        <div class="post-item">
+          <div class="post-title">${esc(post.title || 'Untitled post')}</div>
+          <div class="post-text">${esc(post.text || '')}</div>
+          <div class="post-meta">
+            <span class="post-badge">${esc(userLabel)}</span>
+            <button class="like-btn${liked ? ' active' : ''}" onclick="likePost(${post.id}, this)">❤ <span class="like-count">${likes}</span></button>
+            ${date ? `<span class="post-badge">${esc(date)}</span>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  async function likePost(postId, btn) {
+    if (!postId || !btn) return;
+    const wasLiked = btn.classList.contains('active');
+    btn.disabled = true;
+    const method = wasLiked ? "DELETE" : "POST";
+    const r = await req(`/posts/${postId}/like`, { method });
+    btn.disabled = false;
+
+    if (r.ok) {
+      const countEl = btn.querySelector('.like-count');
+      const current = countEl ? parseInt(countEl.textContent || '0', 10) : 0;
+      const next = Math.max(0, current + (wasLiked ? -1 : 1));
+      if (countEl) countEl.textContent = String(next);
+      btn.classList.toggle('active', !wasLiked);
+      return;
+    }
+
+    if (r.status === 400) {
+      btn.classList.toggle('active', !wasLiked);
+      return;
+    }
+
+    toast(errMsg(r.data), 'err');
+  }
+
   /* ── ANALYSIS ── */
   async function getAnalysis() {
     const wid = v("analysis_wallet_id");
@@ -1097,12 +1196,24 @@
   function openAuthForm(name) {
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-  const map = { login: 'authLogin', register: 'authRegister', forgot: 'authForgot', reset: 'authReset' };
-  document.getElementById(map[name]).classList.add('active');
 
-  // подсветка табов только для login/register
-  if (name === 'login') document.querySelectorAll('.auth-tab')[0]?.classList.add('active');
-  if (name === 'register') document.querySelectorAll('.auth-tab')[1]?.classList.add('active');
+  const map = {
+    login: 'authLogin',
+    register: 'authRegister',
+    forgot: 'authForgot',
+    reset: 'authReset'
+  };
+
+  const targetId = map[name] || 'authLogin';
+  const target = document.getElementById(targetId);
+  if (target) target.classList.add('active');
+
+  // Подсветка табов только для login/register
+  const tabs = document.querySelectorAll('.auth-tab');
+  if (tabs.length >= 2) {
+    if (name === 'login') tabs[0].classList.add('active');
+    if (name === 'register') tabs[1].classList.add('active');
+  }
 }
 
 async function forgotPassword() {

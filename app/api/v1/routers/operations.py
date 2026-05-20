@@ -49,9 +49,9 @@ async def create_transfer(current_user: CurrentUser, payload: TransferCreateSche
                                                                   session)
 
 @operations_router.get("/analysis/{wallet_id}")
-async def get_analysis_for_wallet(current_user: CurrentUser, session: SessionDep, wallet_id: int, verified_user: VerifiedUser):
-    return await get_operations_analysis(current_user.id, session, wallet_id)
+async def get_analysis_for_wallet(verified_user: VerifiedUser, session: SessionDep, wallet_id: int, ):
+    return await get_operations_analysis(verified_user.id, session, wallet_id)
 
 @operations_router.get("/analysis")
-async def get_analysis(current_user: CurrentUser, session: SessionDep, verified_user: VerifiedUser):
-    return await get_operations_analysis(current_user.id, session,)
+async def get_analysis(verified_user: VerifiedUser, session: SessionDep):
+    return await get_operations_analysis(verified_user.id, session, verified_user.id)

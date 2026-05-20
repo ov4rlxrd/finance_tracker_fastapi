@@ -20,6 +20,7 @@ class User(Model):
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     is_verified: Mapped[bool] = mapped_column(default=False, nullable=False)
 
+    posts: Mapped[list[Post]] = relationship(back_populates="user", cascade="all, delete-orphan", lazy="selectin")
     wallets: Mapped[list[Wallet]] = relationship(back_populates="user", cascade="all, delete-orphan", lazy="selectin")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None, nullable=True)
@@ -74,5 +75,26 @@ class PasswordResetToken(Model):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     user: Mapped[User] = relationship(back_populates="reset_tokens")
+
+
+class Post(Model):
+    __tablename__ = 'posts'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    title: Mapped[str] = mapped_column(nullable=False)
+    text: Mapped[str] = mapped_column(nullable=False)
+    user: Mapped[User] = relationship(back_populates="posts")
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),default=lambda: datetime.now(timezone.utc),  nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None, nullable=True)
+
+
+class PostLike(Model):
+    __tablename__ = 'post_likes'
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, primary_key=True)
+    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id"), nullable=False, primary_key=True)
 
 

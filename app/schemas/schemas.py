@@ -20,6 +20,7 @@ class UserCreate(UserBase):
 class UserResponse(UserBase):
     id: int
     wallets: list[WalletResponse]
+    posts: list[PostResponseBase]
     role: str
     model_config = ConfigDict(from_attributes=True)
 
@@ -161,3 +162,30 @@ class VerifyRequest(BaseModel):
     email: EmailStr
     username: str
     token: str
+
+class PostCreate(BaseModel):
+    title: str = Field(..., max_length=127)
+    text: str = Field(..., min_length=1)
+
+
+class PostResponseBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    title: str
+    text: str
+
+class PostResponseLikes(PostResponseBase):
+    likes: int
+
+class PostListItem(PostResponseLikes):
+    username: str
+    user_id: int
+    is_liked: bool
+    created_at: datetime
+
+class PostUpdate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str = Field(..., max_length=127)
+    text: str = Field(..., min_length=1)
